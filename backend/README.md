@@ -1,66 +1,213 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Sistema de Gerenciamento de Restaurante - Backend
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Este documento detalha a implementação do backend do Sistema de Gerenciamento de Restaurante, desenvolvido com Laravel 11 e MySQL. O sistema oferece uma API RESTful completa com autenticação JWT para gerenciamento de categorias, pratos e ingredientes.
 
-## About Laravel
+## Visão Geral do Sistema
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+O backend é responsável pelo processamento de dados e regras de negócio do sistema, fornecendo endpoints seguros e bem estruturados para todas as operações necessárias no gerenciamento de um restaurante.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Tecnologias Utilizadas
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- PHP 8.3
+- Laravel 11
+- MySQL 8.0
+- JWT Authentication
+- Docker e Docker Compose
 
-## Learning Laravel
+## Requisitos de Sistema
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+Para executar o backend, é necessário ter instalado:
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+- PHP >= 8.3
+- Composer
+- Docker e Docker Compose
+- MySQL 8.0
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## Instalação e Configuração
 
-## Laravel Sponsors
+Para configurar o ambiente de desenvolvimento, siga estas etapas:
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+1. Clone o repositório:
+```bash
+git clone [url-do-repositorio]
+cd restaurante-system/backend
+```
 
-### Premium Partners
+2. Instale as dependências:
+```bash
+composer install
+```
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[WebReinvent](https://webreinvent.com/)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Jump24](https://jump24.co.uk)**
-- **[Redberry](https://redberry.international/laravel/)**
-- **[Active Logic](https://activelogic.com)**
-- **[byte5](https://byte5.de)**
-- **[OP.GG](https://op.gg)**
+3. Configure o ambiente:
+```bash
+cp .env.example .env
+php artisan key:generate
+php artisan jwt:secret
+```
 
-## Contributing
+4. Configure o banco de dados via Docker:
+```bash
+# Na raiz do projeto
+docker compose up -d
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+5. Execute as migrações:
+```bash
+php artisan migrate
+```
 
-## Code of Conduct
+## Estrutura do Banco de Dados
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+O sistema utiliza quatro tabelas principais:
 
-## Security Vulnerabilities
+1. categorias
+   - id (primary key)
+   - nome (string)
+   - descricao (text)
+   - margem_lucro (decimal)
+   - data_criacao (date)
+   - removido (boolean)
+   - timestamps
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+2. pratos
+   - id (primary key)
+   - categoria_id (foreign key)
+   - nome (string)
+   - descricao (text)
+   - preco (decimal)
+   - data_criacao (date)
+   - removido (boolean)
+   - timestamps
 
-## License
+3. ingredientes
+   - id (primary key)
+   - nome (string)
+   - descricao (text)
+   - preco_unitario (decimal)
+   - data_validade (date)
+   - removido (boolean)
+   - timestamps
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+4. prato_ingrediente
+   - id (primary key)
+   - prato_id (foreign key)
+   - ingrediente_id (foreign key)
+   - quantidade (decimal)
+   - timestamps
+
+## Endpoints da API
+
+### Autenticação
+- POST /api/login - Realiza login
+- POST /api/register - Registra novo usuário
+- POST /api/logout - Realiza logout
+- POST /api/refresh - Atualiza token JWT
+
+### Categorias
+- GET /api/categorias - Lista todas as categorias
+- GET /api/categorias/{id} - Retorna categoria específica
+- POST /api/categorias - Cria nova categoria
+- PUT /api/categorias/{id} - Atualiza categoria existente
+- DELETE /api/categorias/{id} - Remove categoria (soft delete)
+
+[Endpoints similares para Pratos e Ingredientes]
+
+## Segurança
+
+O sistema implementa várias camadas de segurança:
+
+- Autenticação via JWT
+- Middleware de proteção de rotas
+- Validação de dados de entrada
+- Sanitização de inputs
+- CORS configurado adequadamente
+- Soft delete para preservação de dados
+
+## Configuração do Ambiente (.env)
+
+```env
+APP_NAME=RestauranteSystem
+APP_ENV=local
+APP_DEBUG=true
+APP_URL=http://localhost:8000
+
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3308
+DB_DATABASE=restaurante_db
+DB_USERNAME=restaurante_user
+DB_PASSWORD=restaurante123
+
+JWT_SECRET=[seu-jwt-secret]
+```
+
+## Comandos Úteis
+
+```bash
+# Iniciar servidor de desenvolvimento
+php artisan serve
+
+# Executar migrações
+php artisan migrate
+
+# Limpar cache
+php artisan cache:clear
+php artisan config:clear
+php artisan route:clear
+
+# Listar rotas
+php artisan route:list
+```
+
+## Testes
+
+O sistema inclui testes automatizados:
+
+```bash
+# Executar todos os testes
+php artisan test
+
+# Executar testes específicos
+php artisan test --filter=NomeDaClasse
+```
+
+## Manutenção e Logs
+
+Os logs do sistema podem ser encontrados em:
+```
+/storage/logs/laravel.log
+```
+
+## Desenvolvimento
+
+Para contribuir com o desenvolvimento:
+
+1. Crie uma nova branch
+2. Implemente suas alterações
+3. Execute os testes
+4. Envie um pull request
+
+## Backup do Banco de Dados
+
+Para realizar backup do banco de dados:
+
+```bash
+# Via Docker
+docker exec [container-name] mysqldump -u [user] -p[password] [database] > backup.sql
+```
+
+## Suporte
+
+Em caso de problemas:
+
+1. Verifique os logs em storage/logs
+2. Consulte a documentação do Laravel
+3. Abra uma issue no repositório
+
+## Documentação Adicional
+
+Para mais informações sobre as tecnologias utilizadas:
+
+- [Documentação do Laravel](https://laravel.com/docs)
+- [Documentação do JWT](https://jwt-auth.readthedocs.io)
+- [Documentação do Docker](https://docs.docker.com)
