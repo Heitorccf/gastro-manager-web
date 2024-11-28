@@ -27,7 +27,7 @@ Antes de executar a aplicação, certifique-se de ter:
 
 1. Clone o repositório e navegue até o diretório frontend:
 ```bash
-cd restaurant-system/frontend
+cd gastro-manager-web/frontend
 ```
 
 2. Instale as dependências:
