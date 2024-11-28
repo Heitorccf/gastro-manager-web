@@ -186,16 +186,7 @@ Para contribuir com o desenvolvimento:
 2. Implemente suas alterações
 3. Execute os testes
 4. Envie um pull request
-
-## Backup do Banco de Dados
-
-Para realizar backup do banco de dados:
-
-```bash
-# Via Docker
-docker exec [container-name] mysqldump -u [user] -p[password] [database] > backup.sql
-```
-
+   
 ## Suporte
 
 Em caso de problemas:
