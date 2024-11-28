@@ -1,70 +1,174 @@
-# Getting Started with Create React App
+# Sistema de Gerenciamento de Restaurante - Frontend
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+Aplicação web moderna desenvolvida com React e Material-UI para gerenciamento de operações de restaurante. Esta aplicação frontend integra-se com uma API Laravel para fornecer uma solução completa de gestão de restaurante.
 
-## Available Scripts
+## Visão Geral do Projeto
 
-In the project directory, you can run:
+Esta aplicação frontend atua como interface do usuário para um sistema abrangente de gerenciamento de restaurante. Fornece interfaces intuitivas para gerenciar categorias, pratos e ingredientes, implementando autenticação segura e práticas modernas de gerenciamento de estado.
 
-### `npm start`
+## Tecnologias Utilizadas
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+- React 18.3.1
+- Material-UI 6.1.8
+- Autenticação JWT
+- Axios para integração com API
+- React Router DOM para navegação
+- Context API para gerenciamento de estado
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## Pré-requisitos
 
-### `npm test`
+Antes de executar a aplicação, certifique-se de ter:
+- Node.js (versão 18 ou superior)
+- Gerenciador de pacotes npm ou yarn
+- API Backend em execução (Laravel)
+- Navegador web moderno (Chrome, Firefox, Safari ou Edge)
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+## Instruções de Instalação
 
-### `npm run build`
+1. Clone o repositório e navegue até o diretório frontend:
+```bash
+cd restaurant-system/frontend
+```
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+2. Instale as dependências:
+```bash
+npm install
+```
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+3. Crie o arquivo de ambiente:
+```bash
+cp .env.example .env
+```
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+4. Configure as variáveis de ambiente no arquivo `.env`
+   
+## Servidor de Desenvolvimento
 
-### `npm run eject`
+Inicie o servidor de desenvolvimento:
+```bash
+npm start
+```
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+A aplicação estará disponível em `http://localhost:3000`.
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+## Estrutura do Projeto
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+```
+src/
+├── components/           # Componentes UI reutilizáveis
+│   ├── Categorias/      # Componentes de gerenciamento de categorias
+│   ├── Pratos/          # Componentes de gerenciamento de pratos
+│   └── Ingredientes/    # Componentes de gerenciamento de ingredientes
+├── contexts/            # Provedores de contexto React
+│   ├── AuthContext      # Contexto de autenticação
+│   └── NotificationContext  # Sistema de notificação global
+├── pages/               # Páginas principais da aplicação
+├── services/            # Serviços de integração com API
+└── utils/              # Funções utilitárias e constantes
+```
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+## Funcionalidades
 
-## Learn More
+A aplicação frontend oferece interfaces para:
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+- Autenticação de usuários (login e registro)
+- Gerenciamento de categorias
+- Gerenciamento de pratos com associações de categorias
+- Gerenciamento de ingredientes
+- Gerenciamento de relacionamento prato-ingrediente
+- Validação de formulários em tempo real
+- Design responsivo para todos os tamanhos de tela
+- Notificações toast para feedback do usuário
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+## Autenticação
 
-### Code Splitting
+A aplicação utiliza tokens JWT para autenticação. Os tokens são:
+- Armazenados no localStorage
+- Incluídos automaticamente nas requisições à API
+- Atualizados quando expirados
+- Removidos no logout
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+## Gerenciamento de Estado
 
-### Analyzing the Bundle Size
+O estado da aplicação é gerenciado usando:
+- React Context API para estado global
+- Estado local do componente para dados específicos da UI
+- Hooks personalizados para lógica reutilizável
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+## Tratamento de Erros
 
-### Making a Progressive Web App
+A aplicação implementa tratamento abrangente de erros:
+- Erros de validação de formulário
+- Respostas de erro da API
+- Problemas de conectividade de rede
+- Falhas de autenticação
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+## Estilização
 
-### Advanced Configuration
+A estilização é implementada usando:
+- Componentes Material-UI
+- Configuração de tema personalizado
+- Princípios de design responsivo
+- Padrões consistentes de estilização
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+## Scripts Disponíveis
 
-### Deployment
+```bash
+npm start      # Iniciar servidor de desenvolvimento
+npm build      # Criar build de produção
+npm test       # Executar testes unitários
+npm run lint   # Executar ESLint
+npm run format # Formatar código com Prettier
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+## Como Contribuir
 
-### `npm run build` fails to minify
+1. Faça um fork do repositório
+2. Crie sua branch de feature
+3. Siga as diretrizes de estilo de código
+4. Escreva mensagens de commit significativas
+5. Envie um pull request
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+## Testes
+
+A aplicação inclui:
+- Testes unitários para componentes
+- Testes de integração para serviços de API
+- Testes end-to-end para fluxos críticos
+
+Execute os testes com:
+```bash
+npm test
+```
+
+## Processo de Build
+
+Crie uma build de produção:
+```bash
+npm run build
+```
+
+Isso gera arquivos otimizados no diretório `build`.
+
+## Considerações de Desempenho
+
+A aplicação implementa várias otimizações de desempenho:
+- Divisão de código
+- Carregamento preguiçoso de componentes
+- Memoização de cálculos custosos
+- Estratégias eficientes de re-renderização
+
+## Suporte a Navegadores
+
+Suporta navegadores modernos incluindo:
+- Chrome (2 últimas versões)
+- Firefox (2 últimas versões)
+- Safari (2 últimas versões)
+- Edge (2 últimas versões)
+
+## Suporte
+
+Para suporte, por favor:
+1. Verifique as issues existentes no repositório
+2. Crie uma nova issue se necessário
+3. Forneça passos detalhados de reprodução
