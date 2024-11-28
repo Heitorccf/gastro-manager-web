@@ -1,0 +1,101 @@
+# Backend (Laravel) Ignores
+/backend/vendor/
+/backend/node_modules/
+/backend/public/hot
+/backend/public/storage
+/backend/storage/*.key
+/backend/storage/logs/*
+/backend/.env
+/backend/.env.backup
+/backend/.phpunit.result.cache
+/backend/docker-compose.override.yml
+/backend/Homestead.json
+/backend/Homestead.yaml
+/backend/npm-debug.log
+/backend/yarn-error.log
+/backend/_ide_helper.php
+/backend/.phpstorm.meta.php
+/backend/composer.lock
+
+# Frontend (React) Ignores
+/frontend/node_modules
+/frontend/.pnp
+/frontend/.pnp.js
+/frontend/coverage
+/frontend/build
+/frontend/.DS_Store
+/frontend/.env
+/frontend/.env.local
+/frontend/.env.development.local
+/frontend/.env.test.local
+/frontend/.env.production.local
+/frontend/npm-debug.log*
+/frontend/yarn-debug.log*
+/frontend/yarn-error.log*
+
+# IDE and Editor Files
+.idea/
+.vscode/
+*.sublime-workspace
+*.sublime-project
+*.swp
+*.swo
+*~
+
+# Operating System Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Docker Files
+/docker/data/
+*.env
+.docker-sync/
+docker-compose.override.yml
+
+# Dependency Management
+node_modules/
+vendor/
+package-lock.json
+composer.lock
+yarn.lock
+
+# Environment Files
+.env
+.env.local
+.env.*.local
+
+# Build and Compile Files
+/dist
+/tmp
+/out-tsc
+/build
+
+# Testing and Coverage Files
+/coverage
+.nyc_output
+.coverage
+htmlcov/
+
+# Database Files
+*.sqlite
+*.sqlite3
+*.db
+
+# Log Files
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+logs
+*.log
+
+# Miscellaneous
+.sass-cache/
+.tmp/
+.temp/
+.cache/
