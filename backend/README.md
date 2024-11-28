@@ -29,8 +29,8 @@ Para configurar o ambiente de desenvolvimento, siga estas etapas:
 
 1. Clone o repositório:
 ```bash
-git clone [url-do-repositorio]
-cd restaurante-system/backend
+git clone https://github.com/Heitorccf/gastro-manager-web.git
+cd gastro-manager-web/backend
 ```
 
 2. Instale as dependências:
