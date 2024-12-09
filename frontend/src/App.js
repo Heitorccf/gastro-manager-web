@@ -6,7 +6,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import PrivateRoute from './components/PrivateRoute';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
-import TestAuth from './components/TestAuth';  // Importe o componente de teste
+import Header from './components/Header';
 
 const theme = createTheme();
 
@@ -18,12 +18,14 @@ function App() {
         <BrowserRouter>
           <Routes>
             <Route path="/login" element={<Login />} />
-            <Route path="/test" element={<TestAuth />} /> {/* Rota pública de teste */}
             <Route
               path="/*"
               element={
                 <PrivateRoute>
-                  <Dashboard />
+                  <>
+                    <Header />
+                    <Dashboard />
+                  </>
                 </PrivateRoute>
               }
             />

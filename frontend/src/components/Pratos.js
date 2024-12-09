@@ -1,26 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  Button,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  IconButton,
-  Alert,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Chip,
-  Box
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
+  Paper, Button, Dialog, DialogTitle, DialogContent, DialogActions,
+  TextField, IconButton, Alert, FormControl, InputLabel, Select,
+  MenuItem, Chip, Box, Typography
 } from '@mui/material';
 import { Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import api from '../services/api';
@@ -32,92 +15,127 @@ export default function Pratos() {
   const [open, setOpen] = useState(false);
   const [editando, setEditando] = useState(null);
   const [erro, setErro] = useState('');
-  const [form, setForm] = useState({
+  const [debugInfo, setDebugInfo] = useState('');
+  const initialForm = {
     nome: '',
     descricao: '',
     preco: '',
     data_criacao: new Date().toISOString().split('T')[0],
     categoria_id: '',
     ingredientes: []
-  });
+  };
+  const [form, setForm] = useState(initialForm);
+
+  const loadData = async () => {
+    try {
+      const [pratosRes, categoriasRes, ingredientesRes] = await Promise.all([
+        api.get('/pratos'),
+        api.get('/categorias'),
+        api.get('/ingredientes')
+      ]);
+      setPratos(pratosRes.data);
+      setCategorias(categoriasRes.data);
+      setIngredientes(ingredientesRes.data);
+    } catch (error) {
+      const errorMsg = `Erro ao carregar dados: ${error.message}
+        Detalhes: ${error.response?.data?.message || 'Sem detalhes adicionais'}`;
+      setErro(errorMsg);
+      console.error('Erro ao carregar dados:', error);
+    }
+  };
 
   useEffect(() => {
-    loadPratos();
-    loadCategorias();
-    loadIngredientes();
+    loadData();
   }, []);
-
-  const loadPratos = async () => {
-    try {
-      const response = await api.get('/pratos');
-      setPratos(response.data);
-    } catch (error) {
-      setErro('Erro ao carregar pratos');
-    }
-  };
-
-  const loadCategorias = async () => {
-    try {
-      const response = await api.get('/categorias');
-      setCategorias(response.data);
-    } catch (error) {
-      setErro('Erro ao carregar categorias');
-    }
-  };
-
-  const loadIngredientes = async () => {
-    try {
-      const response = await api.get('/ingredientes');
-      setIngredientes(response.data);
-    } catch (error) {
-      setErro('Erro ao carregar ingredientes');
-    }
-  };
 
   const handleOpen = (prato = null) => {
     if (prato) {
       setForm({
         ...prato,
-        ingredientes: prato.ingredientes.map(i => i.id)
+        ingredientes: prato.ingredientes?.map(i => i.id) || []
       });
       setEditando(prato.id);
     } else {
-      setForm({
-        nome: '',
-        descricao: '',
-        preco: '',
-        data_criacao: new Date().toISOString().split('T')[0],
-        categoria_id: '',
-        ingredientes: []
-      });
+      setForm(initialForm);
       setEditando(null);
     }
     setOpen(true);
+    setErro('');
+    setDebugInfo('');
   };
 
   const handleClose = () => {
     setOpen(false);
     setErro('');
+    setDebugInfo('');
+    setForm(initialForm);
   };
 
   const handleChange = (e) => {
-    setForm({
-      ...form,
-      [e.target.name]: e.target.value
-    });
+    const { name, value } = e.target;
+    console.log(`Campo alterado: ${name}, Valor: `, value);
+    setForm(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
   const handleSubmit = async () => {
     try {
-      if (editando) {
-        await api.put(`/pratos/${editando}`, form);
-      } else {
-        await api.post('/pratos', form);
+      // Validações
+      if (!form.nome?.trim()) {
+        throw new Error('Nome é obrigatório');
       }
+      if (!form.categoria_id) {
+        throw new Error('Categoria é obrigatória');
+      }
+      if (!form.preco || form.preco <= 0) {
+        throw new Error('Preço deve ser maior que zero');
+      }
+
+      const pratoData = {
+        nome: form.nome.trim(),
+        descricao: form.descricao.trim(),
+        preco: parseFloat(form.preco),
+        data_criacao: form.data_criacao,
+        categoria_id: parseInt(form.categoria_id),
+        ingredientes: Array.isArray(form.ingredientes) ?
+          form.ingredientes.map(ingredienteId => ({
+            ingrediente_id: ingredienteId,
+            quantidade: 1 // Valor padrão para quantidade
+          })) : []
+      };
+
+      // Debug info
+      const debugData = `
+        Dados sendo enviados:
+        ${JSON.stringify(pratoData, null, 2)}
+      `;
+      setDebugInfo(debugData);
+      console.log('Dados enviados:', pratoData);
+
+      let response;
+      if (editando) {
+        response = await api.put(`/pratos/${editando}`, pratoData);
+      } else {
+        response = await api.post('/pratos', pratoData);
+      }
+
+      console.log('Resposta do servidor:', response.data);
       handleClose();
-      loadPratos();
+      loadData();
     } catch (error) {
-      setErro('Erro ao salvar prato');
+      const errorMessage = `
+        Erro ao ${editando ? 'atualizar' : 'criar'} prato:
+        Status: ${error.response?.status || 'N/A'}
+        Mensagem: ${error.response?.data?.message || error.message}
+        Detalhes: ${JSON.stringify(error.response?.data || {}, null, 2)}
+      `;
+
+      setErro(errorMessage);
+      console.error('Erro completo:', error);
+      console.error('Response data:', error.response?.data);
+      console.error('Error stack:', error.stack);
     }
   };
 
@@ -125,9 +143,11 @@ export default function Pratos() {
     if (window.confirm('Deseja realmente excluir este prato?')) {
       try {
         await api.delete(`/pratos/${id}`);
-        loadPratos();
+        loadData();
       } catch (error) {
-        setErro('Erro ao excluir prato');
+        const errorMsg = `Erro ao excluir prato: ${error.message}
+          Detalhes: ${error.response?.data?.message || 'Sem detalhes adicionais'}`;
+        setErro(errorMsg);
       }
     }
   };
@@ -143,7 +163,33 @@ export default function Pratos() {
         Novo Prato
       </Button>
 
-      {erro && <Alert severity="error" sx={{ mb: 2 }}>{erro}</Alert>}
+      {erro && (
+        <Alert
+          severity="error"
+          sx={{
+            mb: 2,
+            whiteSpace: 'pre-wrap',
+            maxHeight: '200px',
+            overflowY: 'auto'
+          }}
+        >
+          {erro}
+        </Alert>
+      )}
+
+      {debugInfo && (
+        <Alert
+          severity="info"
+          sx={{
+            mb: 2,
+            whiteSpace: 'pre-wrap',
+            maxHeight: '200px',
+            overflowY: 'auto'
+          }}
+        >
+          {debugInfo}
+        </Alert>
+      )}
 
       <TableContainer component={Paper}>
         <Table>
@@ -163,10 +209,10 @@ export default function Pratos() {
               <TableRow key={prato.id}>
                 <TableCell>{prato.nome}</TableCell>
                 <TableCell>{prato.descricao}</TableCell>
-                <TableCell>R$ {prato.preco}</TableCell>
+                <TableCell>R$ {Number(prato.preco).toFixed(2)}</TableCell>
                 <TableCell>{prato.categoria?.nome}</TableCell>
                 <TableCell>
-                  {prato.ingredientes.map(ing => (
+                  {prato.ingredientes?.map(ing => (
                     <Chip
                       key={ing.id}
                       label={ing.nome}
@@ -203,6 +249,12 @@ export default function Pratos() {
           {editando ? 'Editar Prato' : 'Novo Prato'}
         </DialogTitle>
         <DialogContent>
+          {erro && (
+            <Alert severity="error" sx={{ mb: 2, whiteSpace: 'pre-wrap' }}>
+              {erro}
+            </Alert>
+          )}
+
           <TextField
             autoFocus
             margin="dense"
@@ -212,6 +264,7 @@ export default function Pratos() {
             fullWidth
             value={form.nome}
             onChange={handleChange}
+            required
           />
           <TextField
             margin="dense"
@@ -230,8 +283,9 @@ export default function Pratos() {
             fullWidth
             value={form.preco}
             onChange={handleChange}
+            required
           />
-          <FormControl fullWidth margin="dense">
+          <FormControl fullWidth margin="dense" required>
             <InputLabel>Categoria</InputLabel>
             <Select
               name="categoria_id"
@@ -251,7 +305,7 @@ export default function Pratos() {
             <Select
               multiple
               name="ingredientes"
-              value={form.ingredientes}
+              value={form.ingredientes || []}
               onChange={handleChange}
               label="Ingredientes"
               renderValue={(selected) => (
@@ -283,6 +337,7 @@ export default function Pratos() {
             InputLabelProps={{
               shrink: true,
             }}
+            required
           />
         </DialogContent>
         <DialogActions>

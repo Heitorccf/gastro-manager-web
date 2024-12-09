@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import api from '../services/api';  // Adicione esta importação
 import {
   Container,
   Paper,
@@ -9,8 +10,7 @@ import {
   Typography,
   Alert,
   Box,
-  Link,
-  Grid
+  Link
 } from '@mui/material';
 
 export default function Login() {
@@ -19,17 +19,11 @@ export default function Login() {
     name: '',
     email: '',
     password: '',
+    password_confirmation: ''  // Adicionado para confirmação
   });
   const [error, setError] = useState('');
   const navigate = useNavigate();
   const { signIn } = useAuth();
-
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -40,27 +34,50 @@ export default function Login() {
         await signIn(formData.email, formData.password);
         navigate('/');
       } else {
-        // Lógica de registro
-        const response = await fetch('http://localhost:8000/api/register', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(formData),
+        // Validar senha de confirmação
+        if (formData.password !== formData.password_confirmation) {
+          setError('As senhas não conferem');
+          return;
+        }
+
+        // Registro
+        const response = await api.post('/register', {
+          name: formData.name,
+          email: formData.email,
+          password: formData.password,
+          password_confirmation: formData.password_confirmation
         });
 
-        const data = await response.json();
-
-        if (data.status === 'success') {
+        if (response.data.status === 'success') {
+          // Login automático após registro
           await signIn(formData.email, formData.password);
           navigate('/');
-        } else {
-          setError(data.message || 'Erro no registro');
         }
       }
     } catch (err) {
-      setError(err.message || 'Ocorreu um erro. Tente novamente.');
+      setError(
+        err.response?.data?.message ||
+        (isLogin ? 'Email ou senha inválidos' : 'Erro ao criar conta')
+      );
     }
+  };
+
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
+  };
+
+  const toggleMode = () => {
+    setIsLogin(!isLogin);
+    setError('');
+    setFormData({
+      name: '',
+      email: '',
+      password: '',
+      password_confirmation: ''
+    });
   };
 
   return (
@@ -75,7 +92,7 @@ export default function Login() {
       >
         <Paper elevation={3} sx={{ p: 4, width: '100%' }}>
           <Typography component="h1" variant="h5" align="center" gutterBottom>
-            {isLogin ? 'Login' : 'Registro'}
+            {isLogin ? 'Login' : 'Criar Conta'}
           </Typography>
 
           {error && (
@@ -121,10 +138,24 @@ export default function Login() {
               label="Senha"
               type="password"
               id="password"
-              autoComplete="current-password"
+              autoComplete={isLogin ? "current-password" : "new-password"}
               value={formData.password}
               onChange={handleChange}
             />
+
+            {!isLogin && (
+              <TextField
+                margin="normal"
+                required
+                fullWidth
+                name="password_confirmation"
+                label="Confirmar Senha"
+                type="password"
+                id="password_confirmation"
+                value={formData.password_confirmation}
+                onChange={handleChange}
+              />
+            )}
 
             <Button
               type="submit"
@@ -135,19 +166,18 @@ export default function Login() {
               {isLogin ? 'Entrar' : 'Registrar'}
             </Button>
 
-            <Grid container justifyContent="center">
-              <Grid item>
-                <Link
-                  component="button"
-                  variant="body2"
-                  onClick={() => setIsLogin(!isLogin)}
-                >
-                  {isLogin
-                    ? "Não tem uma conta? Registre-se"
-                    : "Já tem uma conta? Faça login"}
-                </Link>
-              </Grid>
-            </Grid>
+            <Box sx={{ textAlign: 'center' }}>
+              <Link
+                component="button"
+                variant="body2"
+                onClick={toggleMode}
+                sx={{ cursor: 'pointer' }}
+              >
+                {isLogin
+                  ? "Não tem uma conta? Registre-se"
+                  : "Já tem uma conta? Faça login"}
+              </Link>
+            </Box>
           </Box>
         </Paper>
       </Box>
