@@ -14,9 +14,12 @@ import {
   DialogActions,
   TextField,
   IconButton,
-  Alert
+  Alert,
+  Box,
+  Grid,
+  InputAdornment,
 } from '@mui/material';
-import { Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
+import { Edit as EditIcon, Delete as DeleteIcon, Search as SearchIcon } from '@mui/icons-material';
 import api from '../services/api';
 
 export default function Ingredientes() {
@@ -24,6 +27,13 @@ export default function Ingredientes() {
   const [open, setOpen] = useState(false);
   const [editando, setEditando] = useState(null);
   const [erro, setErro] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filters, setFilters] = useState({
+    precoMin: '',
+    precoMax: '',
+    validadeAte: ''
+  });
+
   const [form, setForm] = useState({
     nome: '',
     descricao: '',
@@ -40,7 +50,7 @@ export default function Ingredientes() {
       const response = await api.get('/ingredientes');
       setIngredientes(response.data);
     } catch (error) {
-      setErro('Erro ao carregar ingredientes');
+      setErro('Erro ao carregar ingredientes: ' + error.message);
     }
   };
 
@@ -66,23 +76,37 @@ export default function Ingredientes() {
   };
 
   const handleChange = (e) => {
-    setForm({
-      ...form,
-      [e.target.name]: e.target.value
-    });
+    const { name, value } = e.target;
+    setForm(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
   const handleSubmit = async () => {
     try {
+      if (!form.nome?.trim()) {
+        setErro('Nome é obrigatório');
+        return;
+      }
+
+      const ingredienteData = {
+        ...form,
+        nome: form.nome.trim(),
+        descricao: form.descricao.trim(),
+        preco_unitario: parseFloat(form.preco_unitario)
+      };
+
       if (editando) {
-        await api.put(`/ingredientes/${editando}`, form);
+        await api.put(`/ingredientes/${editando}`, ingredienteData);
       } else {
-        await api.post('/ingredientes', form);
+        await api.post('/ingredientes', ingredienteData);
       }
       handleClose();
       loadIngredientes();
     } catch (error) {
-      setErro('Erro ao salvar ingrediente');
+      setErro('Erro ao salvar ingrediente: ' + error.message);
+      console.error('Erro completo:', error);
     }
   };
 
@@ -92,23 +116,99 @@ export default function Ingredientes() {
         await api.delete(`/ingredientes/${id}`);
         loadIngredientes();
       } catch (error) {
-        setErro('Erro ao excluir ingrediente');
+        setErro('Erro ao excluir ingrediente: ' + error.message);
       }
     }
   };
 
+  // Função de filtro
+  const filteredIngredientes = ingredientes.filter(ingrediente => {
+    const matchesSearch =
+      ingrediente.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      ingrediente.descricao.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesPreco =
+      (!filters.precoMin || ingrediente.preco_unitario >= parseFloat(filters.precoMin)) &&
+      (!filters.precoMax || ingrediente.preco_unitario <= parseFloat(filters.precoMax));
+
+    const matchesValidade = !filters.validadeAte ||
+      new Date(ingrediente.data_validade) <= new Date(filters.validadeAte);
+
+    return matchesSearch && matchesPreco && matchesValidade;
+  });
+
   return (
     <>
-      <Button
-        variant="contained"
-        color="primary"
-        onClick={() => handleOpen()}
-        sx={{ mb: 2 }}
-      >
-        Novo Ingrediente
-      </Button>
+      <Box sx={{ mb: 3 }}>
+        <Grid container spacing={2}>
+          <Grid item xs={12} md={3}>
+            <TextField
+              fullWidth
+              size="small"
+              placeholder="Pesquisar ingredientes..."
+              onChange={(e) => setSearchTerm(e.target.value)}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon />
+                  </InputAdornment>
+                ),
+              }}
+            />
+          </Grid>
+          <Grid item xs={12} md={2}>
+            <TextField
+              fullWidth
+              size="small"
+              label="Preço Mínimo"
+              type="number"
+              value={filters.precoMin}
+              onChange={(e) => setFilters(prev => ({ ...prev, precoMin: e.target.value }))}
+            />
+          </Grid>
+          <Grid item xs={12} md={2}>
+            <TextField
+              fullWidth
+              size="small"
+              label="Preço Máximo"
+              type="number"
+              value={filters.precoMax}
+              onChange={(e) => setFilters(prev => ({ ...prev, precoMax: e.target.value }))}
+            />
+          </Grid>
+          <Grid item xs={12} md={3}>
+            <TextField
+              fullWidth
+              size="small"
+              label="Validade até"
+              type="date"
+              value={filters.validadeAte}
+              onChange={(e) => setFilters(prev => ({ ...prev, validadeAte: e.target.value }))}
+              InputLabelProps={{ shrink: true }}
+            />
+          </Grid>
+          <Grid item xs={12} md={2}>
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={() => handleOpen()}
+              fullWidth
+            >
+              Novo Ingrediente
+            </Button>
+          </Grid>
+        </Grid>
+      </Box>
 
-      {erro && <Alert severity="error" sx={{ mb: 2 }}>{erro}</Alert>}
+      {erro && (
+        <Alert
+          severity="error"
+          sx={{ mb: 2, whiteSpace: 'pre-wrap' }}
+          onClose={() => setErro('')}
+        >
+          {erro}
+        </Alert>
+      )}
 
       <TableContainer component={Paper}>
         <Table>
@@ -118,19 +218,19 @@ export default function Ingredientes() {
               <TableCell>Descrição</TableCell>
               <TableCell>Preço Unitário</TableCell>
               <TableCell>Data de Validade</TableCell>
-              <TableCell>Ações</TableCell>
+              <TableCell align="center">Ações</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {ingredientes.map((ingrediente) => (
+            {filteredIngredientes.map((ingrediente) => (
               <TableRow key={ingrediente.id}>
                 <TableCell>{ingrediente.nome}</TableCell>
                 <TableCell>{ingrediente.descricao}</TableCell>
-                <TableCell>R$ {ingrediente.preco_unitario}</TableCell>
+                <TableCell>R$ {Number(ingrediente.preco_unitario).toFixed(2)}</TableCell>
                 <TableCell>
                   {new Date(ingrediente.data_validade).toLocaleDateString()}
                 </TableCell>
-                <TableCell>
+                <TableCell align="center">
                   <IconButton
                     color="primary"
                     onClick={() => handleOpen(ingrediente)}
@@ -150,11 +250,16 @@ export default function Ingredientes() {
         </Table>
       </TableContainer>
 
-      <Dialog open={open} onClose={handleClose}>
+      <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
         <DialogTitle>
           {editando ? 'Editar Ingrediente' : 'Novo Ingrediente'}
         </DialogTitle>
         <DialogContent>
+          {erro && (
+            <Alert severity="error" sx={{ mb: 2 }} onClose={() => setErro('')}>
+              {erro}
+            </Alert>
+          )}
           <TextField
             autoFocus
             margin="dense"
@@ -164,6 +269,7 @@ export default function Ingredientes() {
             fullWidth
             value={form.nome}
             onChange={handleChange}
+            required
           />
           <TextField
             margin="dense"
@@ -182,6 +288,7 @@ export default function Ingredientes() {
             fullWidth
             value={form.preco_unitario}
             onChange={handleChange}
+            required
           />
           <TextField
             margin="dense"
@@ -194,6 +301,7 @@ export default function Ingredientes() {
             InputLabelProps={{
               shrink: true,
             }}
+            required
           />
         </DialogContent>
         <DialogActions>

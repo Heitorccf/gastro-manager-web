@@ -1,11 +1,30 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-  Paper, Button, Dialog, DialogTitle, DialogContent, DialogActions,
-  TextField, IconButton, Alert, FormControl, InputLabel, Select,
-  MenuItem, Chip, Box, Typography
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  IconButton,
+  Alert,
+  Box,
+  Grid,
+  InputAdornment,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Chip
 } from '@mui/material';
-import { Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
+import { Edit as EditIcon, Delete as DeleteIcon, Search as SearchIcon } from '@mui/icons-material';
 import api from '../services/api';
 
 export default function Pratos() {
@@ -15,7 +34,14 @@ export default function Pratos() {
   const [open, setOpen] = useState(false);
   const [editando, setEditando] = useState(null);
   const [erro, setErro] = useState('');
-  const [debugInfo, setDebugInfo] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filters, setFilters] = useState({
+    categoria: '',
+    precoMin: '',
+    precoMax: '',
+    hasIngrediente: ''
+  });
+
   const initialForm = {
     nome: '',
     descricao: '',
@@ -24,7 +50,12 @@ export default function Pratos() {
     categoria_id: '',
     ingredientes: []
   };
+
   const [form, setForm] = useState(initialForm);
+
+  useEffect(() => {
+    loadData();
+  }, []);
 
   const loadData = async () => {
     try {
@@ -37,16 +68,9 @@ export default function Pratos() {
       setCategorias(categoriasRes.data);
       setIngredientes(ingredientesRes.data);
     } catch (error) {
-      const errorMsg = `Erro ao carregar dados: ${error.message}
-        Detalhes: ${error.response?.data?.message || 'Sem detalhes adicionais'}`;
-      setErro(errorMsg);
-      console.error('Erro ao carregar dados:', error);
+      setErro('Erro ao carregar dados: ' + error.message);
     }
   };
-
-  useEffect(() => {
-    loadData();
-  }, []);
 
   const handleOpen = (prato = null) => {
     if (prato) {
@@ -60,20 +84,15 @@ export default function Pratos() {
       setEditando(null);
     }
     setOpen(true);
-    setErro('');
-    setDebugInfo('');
   };
 
   const handleClose = () => {
     setOpen(false);
     setErro('');
-    setDebugInfo('');
-    setForm(initialForm);
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    console.log(`Campo alterado: ${name}, Valor: `, value);
     setForm(prev => ({
       ...prev,
       [name]: value
@@ -82,15 +101,9 @@ export default function Pratos() {
 
   const handleSubmit = async () => {
     try {
-      // Validações
-      if (!form.nome?.trim()) {
-        throw new Error('Nome é obrigatório');
-      }
-      if (!form.categoria_id) {
-        throw new Error('Categoria é obrigatória');
-      }
-      if (!form.preco || form.preco <= 0) {
-        throw new Error('Preço deve ser maior que zero');
+      if (!form.nome?.trim() || !form.categoria_id) {
+        setErro('Nome e categoria são obrigatórios');
+        return;
       }
 
       const pratoData = {
@@ -99,43 +112,22 @@ export default function Pratos() {
         preco: parseFloat(form.preco),
         data_criacao: form.data_criacao,
         categoria_id: parseInt(form.categoria_id),
-        ingredientes: Array.isArray(form.ingredientes) ?
-          form.ingredientes.map(ingredienteId => ({
-            ingrediente_id: ingredienteId,
-            quantidade: 1 // Valor padrão para quantidade
-          })) : []
+        ingredientes: form.ingredientes.map(id => ({
+          ingrediente_id: id,
+          quantidade: 1
+        }))
       };
 
-      // Debug info
-      const debugData = `
-        Dados sendo enviados:
-        ${JSON.stringify(pratoData, null, 2)}
-      `;
-      setDebugInfo(debugData);
-      console.log('Dados enviados:', pratoData);
-
-      let response;
       if (editando) {
-        response = await api.put(`/pratos/${editando}`, pratoData);
+        await api.put(`/pratos/${editando}`, pratoData);
       } else {
-        response = await api.post('/pratos', pratoData);
+        await api.post('/pratos', pratoData);
       }
-
-      console.log('Resposta do servidor:', response.data);
       handleClose();
       loadData();
     } catch (error) {
-      const errorMessage = `
-        Erro ao ${editando ? 'atualizar' : 'criar'} prato:
-        Status: ${error.response?.status || 'N/A'}
-        Mensagem: ${error.response?.data?.message || error.message}
-        Detalhes: ${JSON.stringify(error.response?.data || {}, null, 2)}
-      `;
-
-      setErro(errorMessage);
+      setErro('Erro ao salvar prato: ' + error.message);
       console.error('Erro completo:', error);
-      console.error('Response data:', error.response?.data);
-      console.error('Error stack:', error.stack);
     }
   };
 
@@ -145,49 +137,119 @@ export default function Pratos() {
         await api.delete(`/pratos/${id}`);
         loadData();
       } catch (error) {
-        const errorMsg = `Erro ao excluir prato: ${error.message}
-          Detalhes: ${error.response?.data?.message || 'Sem detalhes adicionais'}`;
-        setErro(errorMsg);
+        setErro('Erro ao excluir prato: ' + error.message);
       }
     }
   };
 
+  // Função de filtro
+  const filteredPratos = pratos.filter(prato => {
+    const matchesSearch =
+      prato.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      prato.descricao.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesCategoria = !filters.categoria ||
+      prato.categoria_id === parseInt(filters.categoria);
+
+    const matchesPreco =
+      (!filters.precoMin || prato.preco >= parseFloat(filters.precoMin)) &&
+      (!filters.precoMax || prato.preco <= parseFloat(filters.precoMax));
+
+    const matchesIngrediente = !filters.hasIngrediente ||
+      prato.ingredientes.some(ing => ing.id === parseInt(filters.hasIngrediente));
+
+    return matchesSearch && matchesCategoria && matchesPreco && matchesIngrediente;
+  });
+
   return (
     <>
-      <Button
-        variant="contained"
-        color="primary"
-        onClick={() => handleOpen()}
-        sx={{ mb: 2 }}
-      >
-        Novo Prato
-      </Button>
+      <Box sx={{ mb: 3 }}>
+        <Grid container spacing={2}>
+          <Grid item xs={12} md={3}>
+            <TextField
+              fullWidth
+              size="small"
+              placeholder="Pesquisar pratos..."
+              onChange={(e) => setSearchTerm(e.target.value)}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon />
+                  </InputAdornment>
+                ),
+              }}
+            />
+          </Grid>
+          <Grid item xs={12} md={2}>
+            <FormControl fullWidth size="small">
+              <InputLabel>Categoria</InputLabel>
+              <Select
+                value={filters.categoria}
+                onChange={(e) => setFilters(prev => ({ ...prev, categoria: e.target.value }))}
+                label="Categoria"
+              >
+                <MenuItem value="">Todas</MenuItem>
+                {categorias.map(cat => (
+                  <MenuItem key={cat.id} value={cat.id}>{cat.nome}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+          <Grid item xs={12} md={2}>
+            <FormControl fullWidth size="small">
+              <InputLabel>Contém Ingrediente</InputLabel>
+              <Select
+                value={filters.hasIngrediente}
+                onChange={(e) => setFilters(prev => ({ ...prev, hasIngrediente: e.target.value }))}
+                label="Contém Ingrediente"
+              >
+                <MenuItem value="">Todos</MenuItem>
+                {ingredientes.map(ing => (
+                  <MenuItem key={ing.id} value={ing.id}>{ing.nome}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+          <Grid item xs={12} md={2}>
+            <TextField
+              fullWidth
+              size="small"
+              label="Preço Mínimo"
+              type="number"
+              value={filters.precoMin}
+              onChange={(e) => setFilters(prev => ({ ...prev, precoMin: e.target.value }))}
+            />
+          </Grid>
+          <Grid item xs={12} md={2}>
+            <TextField
+              fullWidth
+              size="small"
+              label="Preço Máximo"
+              type="number"
+              value={filters.precoMax}
+              onChange={(e) => setFilters(prev => ({ ...prev, precoMax: e.target.value }))}
+            />
+          </Grid>
+          <Grid item xs={12} md={1}>
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={() => handleOpen()}
+              fullWidth
+            >
+              Novo Prato
+            </Button>
+          </Grid>
+        </Grid>
+      </Box>
 
       {erro && (
         <Alert
           severity="error"
-          sx={{
-            mb: 2,
-            whiteSpace: 'pre-wrap',
-            maxHeight: '200px',
-            overflowY: 'auto'
-          }}
+          sx={{ mb: 2, whiteSpace: 'pre-wrap' }}
+          onClose={() => setErro('')}
         >
           {erro}
-        </Alert>
-      )}
-
-      {debugInfo && (
-        <Alert
-          severity="info"
-          sx={{
-            mb: 2,
-            whiteSpace: 'pre-wrap',
-            maxHeight: '200px',
-            overflowY: 'auto'
-          }}
-        >
-          {debugInfo}
         </Alert>
       )}
 
@@ -201,11 +263,11 @@ export default function Pratos() {
               <TableCell>Categoria</TableCell>
               <TableCell>Ingredientes</TableCell>
               <TableCell>Data de Criação</TableCell>
-              <TableCell>Ações</TableCell>
+              <TableCell align="center">Ações</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {pratos.map((prato) => (
+            {filteredPratos.map((prato) => (
               <TableRow key={prato.id}>
                 <TableCell>{prato.nome}</TableCell>
                 <TableCell>{prato.descricao}</TableCell>
@@ -224,7 +286,7 @@ export default function Pratos() {
                 <TableCell>
                   {new Date(prato.data_criacao).toLocaleDateString()}
                 </TableCell>
-                <TableCell>
+                <TableCell align="center">
                   <IconButton
                     color="primary"
                     onClick={() => handleOpen(prato)}
@@ -250,11 +312,10 @@ export default function Pratos() {
         </DialogTitle>
         <DialogContent>
           {erro && (
-            <Alert severity="error" sx={{ mb: 2, whiteSpace: 'pre-wrap' }}>
+            <Alert severity="error" sx={{ mb: 2 }} onClose={() => setErro('')}>
               {erro}
             </Alert>
           )}
-
           <TextField
             autoFocus
             margin="dense"
@@ -285,13 +346,14 @@ export default function Pratos() {
             onChange={handleChange}
             required
           />
-          <FormControl fullWidth margin="dense" required>
+          <FormControl fullWidth margin="dense">
             <InputLabel>Categoria</InputLabel>
             <Select
               name="categoria_id"
               value={form.categoria_id}
               onChange={handleChange}
               label="Categoria"
+              required
             >
               {categorias.map((cat) => (
                 <MenuItem key={cat.id} value={cat.id}>
